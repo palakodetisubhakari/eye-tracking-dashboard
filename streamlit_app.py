@@ -70,9 +70,26 @@ st.set_page_config(page_title="Eye-Tracking Dashboard", layout="wide")
 
 st.markdown("""
 <style>
-    .main { background-color: #f8f9fa; }
-    .stButton>button { border-radius: 10px; background-color: #1f77b4; color: white; }
-    .stSidebar { background-color: #f0f2f6; }
+    body {
+        background-color: #0e1117;
+        color: #fafafa;
+    }
+    .main {
+        background-color: #0e1117;
+    }
+    .stApp {
+        background-color: #0e1117;
+        color: #fafafa;
+    }
+    .stButton>button {
+        border-radius: 8px;
+        background-color: #2c7be5;
+        color: white;
+    }
+    .stSidebar {
+        background-color: #161b22 !important;
+        color: #fafafa;
+    }
 </style>
 """, unsafe_allow_html=True)
 
