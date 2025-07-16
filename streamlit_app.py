@@ -66,35 +66,48 @@ def classify_performance(score):
         return "High Risk"
 
 # Streamlit UI
-st.set_page_config(page_title="Eye-Tracking Dashboard", layout="centered")
+st.set_page_config(page_title="Eye-Tracking Dashboard", layout="wide")
+
+st.markdown("""
+<style>
+    .main { background-color: #f8f9fa; }
+    .stButton>button { border-radius: 10px; background-color: #1f77b4; color: white; }
+    .stSidebar { background-color: #f0f2f6; }
+</style>
+""", unsafe_allow_html=True)
+
 st.title("\U0001F441 Eye-Tracking Worker Efficiency Dashboard")
 st.markdown("""
-Upload eye-tracking **CSV** files and assign a worker name. The system calculates:
-- AOI (Area of Interest) coverage
+This dashboard helps analyze and score worker focus and attention during assembly tasks using eye-tracking data.
+
+**Upload eye-tracking CSV files**, assign a worker name, and view calculated metrics:
+- Area of Interest (AOI) coverage
 - Fixation metrics
-- Efficiency score & classification
+- Efficiency score & attention classification
 """)
 
-st.sidebar.header("Upload CSV")
-worker_name = st.sidebar.text_input("Enter Worker Name")
-uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
+st.sidebar.header("Upload Gaze Data")
+worker_name = st.sidebar.text_input("Worker Name", placeholder="e.g., John Doe")
+uploaded_file = st.sidebar.file_uploader("Upload CSV File", type="csv")
 
 if uploaded_file and worker_name:
     df = pd.read_csv(uploaded_file)
     metrics = calculate_metrics(df)
     if metrics:
-        st.success(f"Metrics calculated for **{worker_name}**")
+        st.success(f"Efficiency Report for **{worker_name}**")
 
-        with st.expander("📊 Worker Metrics"):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric(label="Efficiency Score (/100)", value=metrics['Efficiency Score (/100)'])
+            st.metric(label="Performance Level", value=metrics['Performance Level'])
+        with col2:
+            st.metric(label="AOI Coverage (%)", value=f"{metrics['AOI Coverage (%)']}%")
+            st.metric(label="Avg. Fixation Duration", value=f"{metrics['Average Fixation Duration (ms)']} ms")
+            st.metric(label="First Fixation on Instruction Label", value=f"{metrics['Time to First Fixation (Instruction Label, ms)']} ms")
+
+        with st.expander("🔍 Detailed Metrics Table"):
             st.dataframe(pd.DataFrame([metrics], index=[worker_name]))
-
-        st.markdown(f"### Performance Summary for `{worker_name}`")
-        st.metric(label="Efficiency Score", value=metrics['Efficiency Score (/100)'])
-        st.metric(label="Performance Level", value=metrics['Performance Level'])
-        st.metric(label="AOI Coverage", value=f"{metrics['AOI Coverage (%)']}%")
-        st.metric(label="Average Fixation Duration", value=f"{metrics['Average Fixation Duration (ms)']} ms")
-        st.metric(label="Time to First Fixation", value=f"{metrics['Time to First Fixation (Instruction Label, ms)']} ms")
     else:
-        st.warning("CSV does not contain enough valid gaze data.")
+        st.error("The uploaded file does not contain sufficient gaze data for meaningful analysis.")
 elif uploaded_file and not worker_name:
-    st.sidebar.warning("Please enter a worker name before uploading.")
+    st.sidebar.warning("Please enter the worker's name before uploading the CSV.")
