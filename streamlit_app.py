@@ -1,8 +1,6 @@
-
 import os
 import pandas as pd
 import streamlit as st
-from fpdf import FPDF
 from datetime import datetime
 
 # AOIs
@@ -34,11 +32,11 @@ def calculate_metrics(df):
     time_to_first_fixation = df[df['AOI'] == "Instruction Label"]['timestamp'].min()
 
     return {
-        "AOI Coverage": round(aoi_coverage, 2),
-        "Avg Fixation Duration": round(avg_fixation_duration, 2),
-        "Time to First Fixation (Instruction Label)": round(time_to_first_fixation, 2) if not pd.isna(time_to_first_fixation) else "N/A",
-        "Efficiency Score": calculate_efficiency_score(aoi_coverage, avg_fixation_duration, time_to_first_fixation),
-        "Performance": classify_performance(calculate_efficiency_score(aoi_coverage, avg_fixation_duration, time_to_first_fixation))
+        "AOI Coverage (%)": round(aoi_coverage, 2),
+        "Average Fixation Duration (ms)": round(avg_fixation_duration, 2),
+        "Time to First Fixation (Instruction Label, ms)": round(time_to_first_fixation, 2) if not pd.isna(time_to_first_fixation) else "N/A",
+        "Efficiency Score (/100)": calculate_efficiency_score(aoi_coverage, avg_fixation_duration, time_to_first_fixation),
+        "Performance Level": classify_performance(calculate_efficiency_score(aoi_coverage, avg_fixation_duration, time_to_first_fixation))
     }
 
 def calculate_efficiency_score(coverage, avg_fix, time_to_first):
@@ -68,17 +66,35 @@ def classify_performance(score):
         return "High Risk"
 
 # Streamlit UI
-st.title("👁️ Eye-Tracking Worker Efficiency Dashboard")
-st.write("Upload eye-tracking CSV files to generate metrics and reports.")
+st.set_page_config(page_title="Eye-Tracking Dashboard", layout="centered")
+st.title("\U0001F441 Eye-Tracking Worker Efficiency Dashboard")
+st.markdown("""
+Upload eye-tracking **CSV** files and assign a worker name. The system calculates:
+- AOI (Area of Interest) coverage
+- Fixation metrics
+- Efficiency score & classification
+""")
 
-uploaded_file = st.file_uploader("Upload a CSV", type="csv")
-if uploaded_file is not None:
+st.sidebar.header("Upload CSV")
+worker_name = st.sidebar.text_input("Enter Worker Name")
+uploaded_file = st.sidebar.file_uploader("Choose a CSV file", type="csv")
+
+if uploaded_file and worker_name:
     df = pd.read_csv(uploaded_file)
     metrics = calculate_metrics(df)
-    worker_id = uploaded_file.name.replace(".csv", "")
     if metrics:
-        st.success("Metrics Calculated Successfully!")
-        st.subheader(f"📊 Summary for {worker_id}")
-        st.write(metrics)
+        st.success(f"Metrics calculated for **{worker_name}**")
+
+        with st.expander("📊 Worker Metrics"):
+            st.dataframe(pd.DataFrame([metrics], index=[worker_name]))
+
+        st.markdown(f"### Performance Summary for `{worker_name}`")
+        st.metric(label="Efficiency Score", value=metrics['Efficiency Score (/100)'])
+        st.metric(label="Performance Level", value=metrics['Performance Level'])
+        st.metric(label="AOI Coverage", value=f"{metrics['AOI Coverage (%)']}%")
+        st.metric(label="Average Fixation Duration", value=f"{metrics['Average Fixation Duration (ms)']} ms")
+        st.metric(label="Time to First Fixation", value=f"{metrics['Time to First Fixation (Instruction Label, ms)']} ms")
     else:
-        st.warning("No meaningful gaze data found in this file.")
+        st.warning("CSV does not contain enough valid gaze data.")
+elif uploaded_file and not worker_name:
+    st.sidebar.warning("Please enter a worker name before uploading.")
